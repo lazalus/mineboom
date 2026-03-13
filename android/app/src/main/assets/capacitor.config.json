@@ -1,0 +1,11 @@
+{
+	"appId": "com.minesweeper.bomb",
+	"appName": "지뢰찾기",
+	"webDir": "www",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"backgroundColor": "#1a1a2e"
+	}
+}
