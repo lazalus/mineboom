@@ -1174,12 +1174,16 @@
           cell.addEventListener('contextmenu', e => { e.preventDefault(); handleRightClick(r,c); });
 
           let lpt = null;
-          cell.addEventListener('touchstart', () => {
-            if (flagMode) return;
-            lpt = setTimeout(() => { handleRightClick(r,c); navigator.vibrate && navigator.vibrate(30); }, 400);
+          let longPressed = false;
+          cell.addEventListener('touchstart', (e) => {
+            longPressed = false;
+            lpt = setTimeout(() => { longPressed = true; handleRightClick(r,c); navigator.vibrate && navigator.vibrate(30); }, 400);
           }, { passive: true });
-          cell.addEventListener('touchend', () => clearTimeout(lpt));
-          cell.addEventListener('touchmove', () => clearTimeout(lpt));
+          cell.addEventListener('touchend', (e) => {
+            clearTimeout(lpt);
+            if (longPressed) { e.preventDefault(); longPressed = false; }
+          });
+          cell.addEventListener('touchmove', () => { clearTimeout(lpt); longPressed = false; });
 
           cell.addEventListener('mousedown', () => { if (!gameOver && !revealed[r][c] && !flagged[r][c]) faceEl.textContent = '😮'; });
           cell.addEventListener('mouseup', () => { if (!gameOver) faceEl.textContent = '😀'; });
