@@ -146,6 +146,111 @@
       box-shadow: 0 2px 12px var(--accent-glow);
     }
 
+    /* Custom modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: #12122a;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      width: 280px;
+      transform: scale(0.9) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.open .modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .modal-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .modal-field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .modal-field input {
+      width: 72px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .modal-field input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .modal-actions button:active { transform: scale(0.95); }
+
+    .modal-actions .modal-cancel {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-dim);
+    }
+
+    .modal-actions .modal-confirm {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
     /* ─── STATS ROW ─── */
     .stats-row {
       display: flex;
@@ -348,49 +453,131 @@
 
     /* ─── BOTTOM BAR ─── */
     .bottom-bar {
-      background: rgba(10,10,26,0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border);
+      background: rgba(10,10,26,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(255,255,255,0.06);
       padding-bottom: var(--safe-bottom);
     }
 
     .bottom-inner {
-      height: var(--bottom-bar-height);
+      height: 60px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 24px;
-      padding: 0 16px;
+      justify-content: space-evenly;
+      padding: 0 20px;
+      max-width: 400px;
+      margin: 0 auto;
     }
 
     .bottom-btn {
+      position: relative;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 2px;
-      background: none;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: transparent;
       border: none;
-      color: var(--text-muted);
+      color: rgba(255,255,255,0.35);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       font-family: 'Inter', sans-serif;
-      padding: 4px 12px;
-      border-radius: 8px;
+      border-radius: 12px;
+      font-size: 1.25rem;
     }
 
-    .bottom-btn:active { transform: scale(0.9); }
+    .bottom-btn:active { transform: scale(0.88); }
 
-    .bottom-btn .btn-icon { font-size: 1.2rem; }
-    .bottom-btn .btn-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.5px; }
+    .bottom-btn:hover {
+      color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.04);
+    }
 
     .bottom-btn.active {
       color: var(--accent);
+      background: rgba(255,61,110,0.1);
     }
+
+    .bottom-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    .bottom-btn .btn-label {
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+      color: inherit;
+    }
+
+    .bottom-btn:hover .btn-label,
+    .bottom-btn.active .btn-label {
+      opacity: 1;
+    }
+
+    .bottom-btn .btn-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    /* Center pill button (new game) */
+    .bottom-btn.primary {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--accent), #cc2255);
+      color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      font-size: 1.3rem;
+    }
+
+    .bottom-btn.primary:hover {
+      background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(255,61,110,0.35);
+      transform: translateY(-1px);
+    }
+
+    .bottom-btn.primary:active {
+      transform: scale(0.92);
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .bottom-btn.primary::after { display: none; }
 
     .bottom-btn.flag-active .btn-icon {
       animation: flagPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+
+    /* Best time pill */
+    .best-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .best-pill .best-icon { font-size: 0.85rem; }
+    .best-pill .best-val { color: var(--green); }
 
     /* ─── TOAST ─── */
     .toast-container {
@@ -542,9 +729,10 @@
   <div class="main" id="main">
     <!-- Difficulty Chips -->
     <div class="chips" id="chips">
-      <div class="chip active" data-level="easy">초급 9×9</div>
-      <div class="chip" data-level="medium">중급 16×16</div>
-      <div class="chip" data-level="hard">고급 30×16</div>
+      <div class="chip active" data-level="easy">초급</div>
+      <div class="chip" data-level="medium">중급</div>
+      <div class="chip" data-level="hard">고급</div>
+      <div class="chip" data-level="custom" id="chip-custom">커스텀</div>
     </div>
 
     <!-- Stats -->
@@ -586,18 +774,42 @@
   <!-- Bottom Bar -->
   <div class="bottom-bar">
     <div class="bottom-inner">
-      <button class="bottom-btn" id="btn-new-game">
-        <span class="btn-icon">🔄</span>
-        <span class="btn-label">새 게임</span>
-      </button>
       <button class="bottom-btn" id="btn-flag-mode">
         <span class="btn-icon">🚩</span>
         <span class="btn-label">깃발</span>
       </button>
-      <button class="bottom-btn" id="btn-best">
-        <span class="btn-icon">🏆</span>
-        <span class="btn-label" id="best-label">최고 --</span>
+      <button class="bottom-btn primary" id="btn-new-game">
+        <span class="btn-icon">↻</span>
       </button>
+      <button class="bottom-btn" id="btn-best">
+        <div class="best-pill">
+          <span class="best-icon">🏆</span>
+          <span class="best-val" id="best-label">--</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom Modal -->
+  <div class="modal-overlay" id="custom-modal">
+    <div class="modal">
+      <h3>커스텀 설정</h3>
+      <div class="modal-field">
+        <label>가로 (열)</label>
+        <input type="number" id="custom-cols" value="12" min="5" max="40">
+      </div>
+      <div class="modal-field">
+        <label>세로 (행)</label>
+        <input type="number" id="custom-rows" value="12" min="5" max="30">
+      </div>
+      <div class="modal-field">
+        <label>지뢰 수</label>
+        <input type="number" id="custom-mines" value="20" min="1" max="300">
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="custom-cancel">취소</button>
+        <button class="modal-confirm" id="custom-confirm">시작</button>
+      </div>
     </div>
   </div>
 
@@ -707,7 +919,7 @@
     function setBest(l,t) { try { localStorage.setItem(`ms_best_${l}`, t); } catch {} }
     function updateBest() {
       const b = getBest(currentLevel);
-      bestLabel.textContent = b ? `최고 ${b}s` : '최고 --';
+      bestLabel.textContent = b ? `${b}s` : '--';
     }
 
     // ─── TOAST ───
@@ -821,11 +1033,55 @@
       cParticles = [];
     }
 
+    // ─── CUSTOM MODAL ───
+    const customModal = $('custom-modal');
+    const customRows = $('custom-rows');
+    const customCols = $('custom-cols');
+    const customMines = $('custom-mines');
+
+    $('custom-cancel').addEventListener('click', () => {
+      customModal.classList.remove('open');
+      // revert chip selection
+      document.querySelector('.chip.active')?.classList.remove('active');
+      document.querySelector(`.chip[data-level="${currentLevel}"]`).classList.add('active');
+    });
+
+    $('custom-confirm').addEventListener('click', () => {
+      const r = Math.max(5, Math.min(30, parseInt(customRows.value) || 12));
+      const c = Math.max(5, Math.min(40, parseInt(customCols.value) || 12));
+      const maxMines = Math.floor(r * c * 0.8);
+      const m = Math.max(1, Math.min(maxMines, parseInt(customMines.value) || 20));
+
+      customRows.value = r;
+      customCols.value = c;
+      customMines.value = m;
+
+      LEVELS.custom = { rows: r, cols: c, mines: m };
+      currentLevel = 'custom';
+      customModal.classList.remove('open');
+      sfxClick();
+      startGame();
+    });
+
+    customModal.addEventListener('click', (e) => {
+      if (e.target === customModal) {
+        customModal.classList.remove('open');
+        document.querySelector('.chip.active')?.classList.remove('active');
+        document.querySelector(`.chip[data-level="${currentLevel}"]`).classList.add('active');
+      }
+    });
+
     // ─── GAME ───
     document.querySelectorAll('.chip').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelector('.chip.active').classList.remove('active');
         btn.classList.add('active');
+
+        if (btn.dataset.level === 'custom') {
+          customModal.classList.add('open');
+          return;
+        }
+
         currentLevel = btn.dataset.level;
         sfxClick();
         startGame();
