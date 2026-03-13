@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a1a">
+  <title>지뢰찾기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a1a;
+      --bg-card: rgba(255,255,255,0.05);
+      --bg-card-hover: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.08);
+      --border-light: rgba(255,255,255,0.12);
+      --accent: #ff3d6e;
+      --accent-glow: rgba(255,61,110,0.25);
+      --accent-soft: #ff6b8a;
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --gold: #fbbf24;
+      --purple: #a78bfa;
+      --orange: #fb923c;
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.5);
+      --text-muted: rgba(255,255,255,0.3);
+      --cell-size: 40px;
+      --gap: 2px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --nav-height: 52px;
+      --bottom-bar-height: 56px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── TOP NAV BAR (app style) ─── */
+    .nav-bar {
+      position: relative;
+      z-index: 10;
+      padding-top: var(--safe-top);
+      background: rgba(10,10,26,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      height: var(--nav-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+
+    .nav-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:active { transform: scale(0.9); }
+
+    .nav-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* ─── MAIN CONTENT (scrollable) ─── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px;
+    }
+
+    /* ─── DIFFICULTY CHIPS ─── */
+    .chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chip {
+      padding: 7px 16px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .chip:active { transform: scale(0.95); }
+
+    .chip.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+
+    /* ─── STATS ROW ─── */
+    .stats-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .stat-card.mines .stat-num { color: var(--accent); }
+    .stat-card.timer .stat-num { color: var(--blue); }
+    .stat-card.score .stat-num { color: var(--gold); }
+    .stat-card.combo .stat-num { color: var(--purple); transition: all 0.2s; }
+    .stat-card.combo .stat-num.hot { color: var(--orange); text-shadow: 0 0 8px rgba(251,146,60,0.5); }
+    .stat-card.combo .stat-num.fire { color: #f87171; text-shadow: 0 0 12px rgba(248,113,113,0.6); }
+
+    /* ─── FACE / NEW GAME ─── */
+    .new-game-row {
+      margin-bottom: 14px;
+    }
+
+    .face-btn {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .face-btn:active { transform: scale(0.9); }
+
+    /* ─── BOARD ─── */
+    .board-container {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      overflow-x: auto;
+      max-width: 100%;
+      position: relative;
+    }
+
+    .board {
+      display: inline-grid;
+      gap: var(--gap);
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 800;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .cell.hidden {
+      background: linear-gradient(145deg, #1c1c38, #151530);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .cell.hidden:hover {
+      background: linear-gradient(145deg, #26264a, #1c1c38);
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .cell.hidden:active {
+      transform: scale(0.94);
+      box-shadow: none;
+    }
+
+    .cell.revealed {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.02);
+      cursor: default;
+      animation: cellReveal 0.25s ease-out;
+    }
+
+    .cell.flagged {
+      background: linear-gradient(145deg, #1c1c38, #151530);
+      border: 1px solid rgba(255,61,110,0.3);
+      box-shadow: 0 0 8px rgba(255,61,110,0.12);
+      animation: flagPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cell.mine-hit {
+      background: linear-gradient(145deg, #ff3d6e, #cc2255);
+      border: 1px solid rgba(255,61,110,0.5);
+      animation: explode 0.5s ease-out;
+    }
+
+    .cell.mine-revealed {
+      background: rgba(255,61,110,0.08);
+      border: 1px solid rgba(255,61,110,0.12);
+      animation: mineShow 0.4s ease-out both;
+    }
+
+    .cell .flag-icon { font-size: 1.05rem; filter: drop-shadow(0 0 3px rgba(255,61,110,0.4)); }
+    .cell .mine-icon { font-size: 1.05rem; }
+
+    .cell[data-number="1"] { color: #60a5fa; text-shadow: 0 0 6px rgba(96,165,250,0.25); }
+    .cell[data-number="2"] { color: #4ade80; text-shadow: 0 0 6px rgba(74,222,128,0.25); }
+    .cell[data-number="3"] { color: #f87171; text-shadow: 0 0 6px rgba(248,113,113,0.25); }
+    .cell[data-number="4"] { color: #a78bfa; text-shadow: 0 0 6px rgba(167,139,250,0.25); }
+    .cell[data-number="5"] { color: #fb923c; text-shadow: 0 0 6px rgba(251,146,60,0.25); }
+    .cell[data-number="6"] { color: #22d3ee; text-shadow: 0 0 6px rgba(34,211,238,0.25); }
+    .cell[data-number="7"] { color: #f472b6; text-shadow: 0 0 6px rgba(244,114,182,0.25); }
+    .cell[data-number="8"] { color: #94a3b8; }
+
+    /* ─── SCORE POP ─── */
+    .score-pop {
+      position: fixed;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      pointer-events: none;
+      z-index: 50;
+      animation: scorePop 0.7s ease-out forwards;
+    }
+
+    .score-pop.big {
+      font-size: 1rem;
+      color: var(--orange);
+    }
+
+    @keyframes scorePop {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-36px) scale(1.2); }
+    }
+
+    /* ─── MESSAGE ─── */
+    .message-area {
+      margin-top: 14px;
+      min-height: 2rem;
+    }
+
+    .message {
+      font-size: 0.95rem;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.35s ease-out;
+    }
+
+    .message.show { opacity: 1; transform: translateY(0); }
+    .message.win { color: var(--green); }
+    .message.lose { color: var(--accent); }
+
+    .best-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      background: var(--green);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-left: 6px;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    /* ─── BOTTOM BAR ─── */
+    .bottom-bar {
+      background: rgba(10,10,26,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .bottom-inner {
+      height: var(--bottom-bar-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 0 16px;
+    }
+
+    .bottom-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+
+    .bottom-btn:active { transform: scale(0.9); }
+
+    .bottom-btn .btn-icon { font-size: 1.2rem; }
+    .bottom-btn .btn-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.5px; }
+
+    .bottom-btn.active {
+      color: var(--accent);
+    }
+
+    .bottom-btn.flag-active .btn-icon {
+      animation: flagPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ─── TOAST ─── */
+    .toast-container {
+      position: fixed;
+      top: calc(var(--safe-top) + var(--nav-height) + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(20,20,40,0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 18px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.25s ease-in 2.5s forwards;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+
+    .toast-icon { font-size: 1.2rem; }
+    .toast-text { font-size: 0.82rem; font-weight: 700; }
+    .toast-desc { font-size: 0.68rem; color: var(--text-dim); }
+
+    @keyframes toastIn {
+      0% { opacity: 0; transform: translateY(-16px) scale(0.9); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes toastOut {
+      0% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); }
+    }
+
+    /* ─── SCREEN FLASH ─── */
+    .screen-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 150;
+      opacity: 0;
+    }
+
+    .screen-flash.red {
+      background: radial-gradient(circle, rgba(255,61,110,0.3), transparent 70%);
+      animation: flashAnim 0.4s ease-out;
+    }
+
+    .screen-flash.gold {
+      background: radial-gradient(circle, rgba(251,191,36,0.2), transparent 70%);
+      animation: flashAnim 0.5s ease-out;
+    }
+
+    @keyframes flashAnim {
+      0% { opacity: 1; } 100% { opacity: 0; }
+    }
+
+    /* Canvas overlays */
+    #particles, #confetti {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Animations */
+    @keyframes cellReveal {
+      0% { transform: scale(0.85); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes flagPop {
+      0% { transform: scale(0.5); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes explode {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes mineShow {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes shakeBoard {
+      0%,100% { transform: translateX(0); }
+      10% { transform: translateX(-5px) rotate(-0.8deg); }
+      20% { transform: translateX(5px) rotate(0.8deg); }
+      30% { transform: translateX(-4px) rotate(-0.4deg); }
+      40% { transform: translateX(4px) rotate(0.4deg); }
+      50% { transform: translateX(-2px); }
+      60% { transform: translateX(2px); }
+    }
+
+    .board-container.shake { animation: shakeBoard 0.5s ease-out; }
+
+    /* Mobile sizes */
+    @media (hover: none) and (pointer: coarse) {
+      .cell.hidden:hover {
+        background: linear-gradient(145deg, #1c1c38, #151530);
+        border-color: rgba(255,255,255,0.06);
+        transform: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root { --cell-size: 36px; }
+    }
+
+    @media (max-width: 400px) {
+      :root { --cell-size: 33px; }
+      .stats-row { gap: 5px; }
+      .stat-card { padding: 8px 4px; }
+      .stat-card .stat-num { font-size: 1rem; }
+    }
+
+    @media (max-width: 350px) {
+      :root { --cell-size: 30px; }
+    }
+
+    /* When board is large, allow horizontal scroll */
+    .board-container { -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <div class="nav-bar">
+    <div class="nav-inner">
+      <div class="nav-title">💣 지뢰찾기</div>
+      <div class="nav-actions">
+        <div class="nav-btn" id="sound-toggle" title="사운드">🔊</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main" id="main">
+    <!-- Difficulty Chips -->
+    <div class="chips" id="chips">
+      <div class="chip active" data-level="easy">초급 9×9</div>
+      <div class="chip" data-level="medium">중급 16×16</div>
+      <div class="chip" data-level="hard">고급 30×16</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card mines">
+        <div class="stat-label">지뢰</div>
+        <div class="stat-num" id="mines-count">10</div>
+      </div>
+      <div class="stat-card timer">
+        <div class="stat-label">시간</div>
+        <div class="stat-num" id="timer">000</div>
+      </div>
+      <div class="stat-card score">
+        <div class="stat-label">점수</div>
+        <div class="stat-num" id="score">0</div>
+      </div>
+      <div class="stat-card combo">
+        <div class="stat-label">콤보</div>
+        <div class="stat-num" id="combo">x1</div>
+      </div>
+    </div>
+
+    <!-- Face -->
+    <div class="new-game-row">
+      <div class="face-btn" id="face" title="새 게임">😀</div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container" id="board-container">
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- Message -->
+    <div class="message-area">
+      <div class="message" id="message"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="bottom-inner">
+      <button class="bottom-btn" id="btn-new-game">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-label">새 게임</span>
+      </button>
+      <button class="bottom-btn" id="btn-flag-mode">
+        <span class="btn-icon">🚩</span>
+        <span class="btn-label">깃발</span>
+      </button>
+      <button class="bottom-btn" id="btn-best">
+        <span class="btn-icon">🏆</span>
+        <span class="btn-label" id="best-label">최고 --</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div class="toast-container" id="toast-container"></div>
+  <div class="screen-flash" id="screen-flash"></div>
+  <canvas id="particles"></canvas>
+  <canvas id="confetti"></canvas>
+
+  <script>
+    // ─── CONFIG ───
+    const LEVELS = {
+      easy:   { rows: 9,  cols: 9,  mines: 10 },
+      medium: { rows: 16, cols: 16, mines: 40 },
+      hard:   { rows: 16, cols: 30, mines: 99 },
+    };
+
+    // ─── STATE ───
+    let currentLevel = 'easy';
+    let board, revealed, flagged;
+    let gameOver, firstClick, minesLeft, seconds, totalSafeCells, revealedCount;
+    let timerInterval = null;
+    let flagMode = false;
+    let score = 0, combo = 1, lastClickTime = 0;
+    let soundEnabled = true;
+
+    // ─── DOM ───
+    const $ = id => document.getElementById(id);
+    const boardEl = $('board');
+    const boardContainer = $('board-container');
+    const minesCountEl = $('mines-count');
+    const timerEl = $('timer');
+    const messageEl = $('message');
+    const faceEl = $('face');
+    const scoreEl = $('score');
+    const comboEl = $('combo');
+    const bestLabel = $('best-label');
+    const toastContainer = $('toast-container');
+    const screenFlash = $('screen-flash');
+    const soundToggle = $('sound-toggle');
+
+    const particleCanvas = $('particles');
+    const particleCtx = particleCanvas.getContext('2d');
+    const confettiCanvas = $('confetti');
+    const confettiCtx = confettiCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      particleCanvas.width = confettiCanvas.width = window.innerWidth;
+      particleCanvas.height = confettiCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    // ─── SOUND ───
+    let audioCtx;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function playTone(freq, dur, type = 'sine', vol = 0.12) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type; o.frequency.value = freq;
+        g.gain.setValueAtTime(vol, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + dur);
+      } catch {}
+    }
+
+    const sfxClick = () => playTone(650 + Math.random() * 200, 0.07, 'sine', 0.08);
+    const sfxBigReveal = () => { playTone(400,0.12); setTimeout(() => playTone(600,0.12), 40); setTimeout(() => playTone(800,0.15), 80); };
+    const sfxFlag = () => { playTone(900,0.05,'square',0.07); setTimeout(() => playTone(1300,0.06,'square',0.05), 30); };
+    const sfxUnflag = () => playTone(500,0.05,'square',0.05);
+    const sfxCombo = () => playTone(800 + combo * 60, 0.08, 'triangle', 0.08);
+
+    function sfxExplosion() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/d.length, 2.5);
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 350;
+        src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+      } catch {}
+    }
+
+    function sfxWin() {
+      [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f, 0.25, 'sine', 0.1), i*100));
+    }
+
+    soundToggle.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+    });
+
+    // ─── BEST TIMES ───
+    function getBest(l) { try { return parseInt(localStorage.getItem(`ms_best_${l}`)) || null; } catch { return null; } }
+    function setBest(l,t) { try { localStorage.setItem(`ms_best_${l}`, t); } catch {} }
+    function updateBest() {
+      const b = getBest(currentLevel);
+      bestLabel.textContent = b ? `최고 ${b}s` : '최고 --';
+    }
+
+    // ─── TOAST ───
+    const shownAch = new Set();
+    function showToast(icon, text, desc = '') {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.innerHTML = `<span class="toast-icon">${icon}</span><div><div class="toast-text">${text}</div>${desc ? `<div class="toast-desc">${desc}</div>` : ''}</div>`;
+      toastContainer.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    function checkAchievements() {
+      if (combo >= 5 && !shownAch.has('c5')) { shownAch.add('c5'); showToast('🔥', '연속 폭발!', '5콤보'); }
+      if (combo >= 10 && !shownAch.has('c10')) { shownAch.add('c10'); showToast('💥', 'UNSTOPPABLE', '10콤보'); }
+      if (score >= 1000 && !shownAch.has('s1k')) { shownAch.add('s1k'); showToast('💎', '천점 돌파!', `${score.toLocaleString()}점`); }
+    }
+
+    // ─── FLASH ───
+    function flash(c) {
+      screenFlash.className = 'screen-flash';
+      void screenFlash.offsetWidth;
+      screenFlash.classList.add(c);
+      setTimeout(() => screenFlash.className = 'screen-flash', 500);
+    }
+
+    // ─── SCORE POP ───
+    function showScorePop(r, c, pts) {
+      const cell = getCell(r, c);
+      if (!cell) return;
+      const rect = cell.getBoundingClientRect();
+      const pop = document.createElement('div');
+      pop.className = pts >= 50 ? 'score-pop big' : 'score-pop';
+      pop.textContent = `+${pts}`;
+      pop.style.left = `${rect.left + rect.width/2}px`;
+      pop.style.top = `${rect.top}px`;
+      document.body.appendChild(pop);
+      setTimeout(() => pop.remove(), 700);
+    }
+
+    // ─── PARTICLES ───
+    let particles = [];
+    let particleAnimId = null;
+
+    function spawnParticles(x, y, n, colors, spd = 3) {
+      for (let i = 0; i < n; i++) {
+        const a = (Math.PI*2*i)/n + Math.random()*0.5;
+        const v = spd * (0.5 + Math.random());
+        particles.push({ x, y, vx: Math.cos(a)*v, vy: Math.sin(a)*v, size: 2+Math.random()*3,
+          color: colors[Math.floor(Math.random()*colors.length)], life: 1, decay: 0.015+Math.random()*0.015 });
+      }
+      if (!particleAnimId) animParticles();
+    }
+
+    function animParticles() {
+      particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+      particles = particles.filter(p => p.life > 0);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.vx *= 0.98; p.life -= p.decay;
+        particleCtx.globalAlpha = p.life;
+        particleCtx.fillStyle = p.color;
+        particleCtx.beginPath();
+        particleCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+        particleCtx.fill();
+      }
+      particleCtx.globalAlpha = 1;
+      particleAnimId = particles.length > 0 ? requestAnimationFrame(animParticles) : null;
+    }
+
+    // ─── CONFETTI ───
+    let cParticles = [], cAnimId = null;
+
+    function launchConfetti() {
+      cParticles = [];
+      const cols = ['#ff3d6e','#4ade80','#60a5fa','#fbbf24','#a78bfa','#fb923c','#22d3ee','#f472b6'];
+      for (let i = 0; i < 180; i++) {
+        cParticles.push({
+          x: Math.random()*confettiCanvas.width,
+          y: -20 - Math.random()*confettiCanvas.height*0.5,
+          w: 4+Math.random()*7, h: 2+Math.random()*4,
+          color: cols[Math.floor(Math.random()*cols.length)],
+          vx: (Math.random()-0.5)*5, vy: 2+Math.random()*3,
+          rot: Math.random()*360, rotSpd: (Math.random()-0.5)*12,
+          opacity: 1, wb: Math.random()*Math.PI*2, wbSpd: 0.03+Math.random()*0.04,
+        });
+      }
+      function anim() {
+        confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        let alive = false;
+        for (const p of cParticles) {
+          if (p.opacity <= 0) continue; alive = true;
+          p.wb += p.wbSpd; p.x += p.vx + Math.sin(p.wb)*0.5;
+          p.y += p.vy; p.vy += 0.03; p.rot += p.rotSpd;
+          if (p.y > confettiCanvas.height+20) p.opacity -= 0.04;
+          confettiCtx.save();
+          confettiCtx.translate(p.x, p.y);
+          confettiCtx.rotate(p.rot*Math.PI/180);
+          confettiCtx.globalAlpha = Math.max(0, p.opacity);
+          confettiCtx.fillStyle = p.color;
+          confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          confettiCtx.restore();
+        }
+        cAnimId = alive ? requestAnimationFrame(anim) : null;
+      }
+      anim();
+    }
+
+    function stopConfetti() {
+      if (cAnimId) { cancelAnimationFrame(cAnimId); cAnimId = null; }
+      confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+      cParticles = [];
+    }
+
+    // ─── GAME ───
+    document.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('.chip.active').classList.remove('active');
+        btn.classList.add('active');
+        currentLevel = btn.dataset.level;
+        sfxClick();
+        startGame();
+      });
+    });
+
+    faceEl.addEventListener('click', () => { sfxClick(); startGame(); });
+    $('btn-new-game').addEventListener('click', () => { sfxClick(); startGame(); });
+    $('btn-flag-mode').addEventListener('click', () => {
+      flagMode = !flagMode;
+      $('btn-flag-mode').classList.toggle('active', flagMode);
+      $('btn-flag-mode').classList.toggle('flag-active', flagMode);
+      sfxFlag();
+    });
+    $('btn-best').addEventListener('click', () => {
+      const b = getBest(currentLevel);
+      const name = currentLevel === 'easy' ? '초급' : currentLevel === 'medium' ? '중급' : '고급';
+      showToast('🏆', b ? `${name} 최고기록: ${b}초` : `${name} 기록 없음`, '더 빨리 클리어해보세요!');
+    });
+
+    function startGame() {
+      const { rows, cols, mines } = LEVELS[currentLevel];
+      gameOver = false; firstClick = true; revealedCount = 0;
+      minesLeft = mines; totalSafeCells = rows*cols - mines;
+      seconds = 0; score = 0; combo = 1; lastClickTime = 0;
+      clearInterval(timerInterval); timerInterval = null;
+
+      minesCountEl.textContent = minesLeft;
+      timerEl.textContent = '000';
+      scoreEl.textContent = '0';
+      comboEl.textContent = 'x1';
+      comboEl.className = 'stat-num';
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+      faceEl.textContent = '😀';
+
+      shownAch.clear();
+      updateBest();
+      stopConfetti();
+
+      board = Array.from({ length: rows }, () => Array(cols).fill(0));
+      revealed = Array.from({ length: rows }, () => Array(cols).fill(false));
+      flagged = Array.from({ length: rows }, () => Array(cols).fill(false));
+
+      renderBoard();
+    }
+
+    function placeMines(er, ec) {
+      const { rows, cols, mines } = LEVELS[currentLevel];
+      const ex = new Set();
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = er+dr, nc = ec+dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) ex.add(nr*cols+nc);
+        }
+      let p = 0;
+      while (p < mines) {
+        const r = Math.floor(Math.random()*rows), c = Math.floor(Math.random()*cols);
+        if (board[r][c] !== -1 && !ex.has(r*cols+c)) { board[r][c] = -1; p++; }
+      }
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          if (board[r][c] === -1) continue;
+          let cnt = 0;
+          eachNbr(r, c, (nr,nc) => { if (board[nr][nc] === -1) cnt++; });
+          board[r][c] = cnt;
+        }
+    }
+
+    function eachNbr(r, c, fn) {
+      const { rows, cols } = LEVELS[currentLevel];
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = r+dr, nc = c+dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) fn(nr, nc);
+        }
+    }
+
+    function renderBoard() {
+      const { rows, cols } = LEVELS[currentLevel];
+      boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+      boardEl.innerHTML = '';
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell hidden';
+
+          cell.addEventListener('click', () => flagMode ? handleRightClick(r,c) : handleClick(r,c));
+          cell.addEventListener('contextmenu', e => { e.preventDefault(); handleRightClick(r,c); });
+
+          let lpt = null;
+          cell.addEventListener('touchstart', () => {
+            if (flagMode) return;
+            lpt = setTimeout(() => { handleRightClick(r,c); navigator.vibrate && navigator.vibrate(30); }, 400);
+          }, { passive: true });
+          cell.addEventListener('touchend', () => clearTimeout(lpt));
+          cell.addEventListener('touchmove', () => clearTimeout(lpt));
+
+          cell.addEventListener('mousedown', () => { if (!gameOver && !revealed[r][c] && !flagged[r][c]) faceEl.textContent = '😮'; });
+          cell.addEventListener('mouseup', () => { if (!gameOver) faceEl.textContent = '😀'; });
+
+          boardEl.appendChild(cell);
+        }
+    }
+
+    function getCell(r, c) {
+      return boardEl.children[r * LEVELS[currentLevel].cols + c];
+    }
+
+    function handleClick(r, c) {
+      if (gameOver || flagged[r][c] || revealed[r][c]) return;
+
+      const now = Date.now();
+      combo = (now - lastClickTime < 2000) ? Math.min(combo+1, 20) : 1;
+      lastClickTime = now;
+
+      if (firstClick) { firstClick = false; placeMines(r,c); startTimer(); }
+      if (board[r][c] === -1) { lose(r,c); return; }
+
+      const prev = revealedCount;
+      reveal(r, c);
+      const opened = revealedCount - prev;
+
+      const pts = opened * 10 * combo;
+      score += pts;
+      scoreEl.textContent = score.toLocaleString();
+      comboEl.textContent = `x${combo}`;
+      comboEl.className = 'stat-num' + (combo >= 10 ? ' fire' : combo >= 5 ? ' hot' : '');
+
+      if (pts > 0) showScorePop(r, c, pts);
+      opened > 5 ? sfxBigReveal() : sfxClick();
+      if (combo >= 5) sfxCombo();
+
+      if (opened > 10) {
+        const rect = getCell(r,c).getBoundingClientRect();
+        spawnParticles(rect.left+rect.width/2, rect.top+rect.height/2,
+          Math.min(opened, 35), ['#60a5fa','#4ade80','#fbbf24','#a78bfa'], 3);
+      }
+
+      checkAchievements();
+      checkWin();
+    }
+
+    function handleRightClick(r, c) {
+      if (gameOver || revealed[r][c] || firstClick) return;
+      const cell = getCell(r, c);
+      if (flagged[r][c]) {
+        flagged[r][c] = false; cell.classList.remove('flagged'); cell.innerHTML = ''; minesLeft++; sfxUnflag();
+      } else {
+        flagged[r][c] = true; cell.classList.add('flagged');
+        cell.innerHTML = '<span class="flag-icon">🚩</span>'; minesLeft--; sfxFlag();
+        const rect = cell.getBoundingClientRect();
+        spawnParticles(rect.left+rect.width/2, rect.top+rect.height/2, 5, ['#ff3d6e','#ff6b8a'], 2);
+      }
+      minesCountEl.textContent = minesLeft;
+    }
+
+    function reveal(r, c) {
+      if (revealed[r][c] || flagged[r][c]) return;
+      revealed[r][c] = true; revealedCount++;
+      const cell = getCell(r, c);
+      cell.classList.remove('hidden'); cell.classList.add('revealed');
+      const v = board[r][c];
+      if (v > 0) { cell.textContent = v; cell.dataset.number = v; }
+      else if (v === 0) eachNbr(r, c, (nr,nc) => { if (!revealed[nr][nc] && !flagged[nr][nc]) reveal(nr,nc); });
+    }
+
+    function lose(hr, hc) {
+      gameOver = true; clearInterval(timerInterval);
+      faceEl.textContent = '😵';
+      sfxExplosion(); flash('red');
+      boardContainer.classList.add('shake');
+      setTimeout(() => boardContainer.classList.remove('shake'), 600);
+
+      const hitRect = getCell(hr,hc).getBoundingClientRect();
+      spawnParticles(hitRect.left+hitRect.width/2, hitRect.top+hitRect.height/2, 45, ['#ff3d6e','#ff6b8a','#fbbf24','#fff'], 5);
+
+      messageEl.textContent = '게임 오버!';
+      messageEl.className = 'message lose show';
+
+      const { rows, cols } = LEVELS[currentLevel];
+      let delay = 0;
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          const cell = getCell(r, c);
+          if (board[r][c] === -1) {
+            if (r === hr && c === hc) {
+              cell.classList.remove('hidden'); cell.classList.add('mine-hit');
+              cell.innerHTML = '<span class="mine-icon">💣</span>';
+            } else if (!flagged[r][c]) {
+              delay += 35;
+              ((d, cl) => setTimeout(() => {
+                cl.classList.remove('hidden'); cl.classList.add('mine-revealed');
+                cl.innerHTML = '<span class="mine-icon">💣</span>';
+                const r2 = cl.getBoundingClientRect();
+                spawnParticles(r2.left+r2.width/2, r2.top+r2.height/2, 3, ['#ff3d6e'], 1.5);
+              }, d))(delay, cell);
+            }
+          } else if (flagged[r][c]) cell.innerHTML = '❌';
+        }
+    }
+
+    function checkWin() {
+      if (revealedCount !== totalSafeCells) return;
+      gameOver = true; clearInterval(timerInterval);
+      faceEl.textContent = '😎';
+      sfxWin(); flash('gold');
+
+      const prev = getBest(currentLevel);
+      const isNew = !prev || seconds < prev;
+      if (isNew) { setBest(currentLevel, seconds); updateBest(); }
+
+      const name = currentLevel === 'easy' ? '초급' : currentLevel === 'medium' ? '중급' : '고급';
+      messageEl.innerHTML = `${name} 클리어! ${seconds}초 / ${score.toLocaleString()}점`
+        + (isNew ? '<span class="best-badge">NEW BEST</span>' : '');
+      messageEl.className = 'message win show';
+
+      if (isNew) setTimeout(() => showToast('🏆', '신기록!', `${name} ${seconds}초`), 400);
+
+      const { rows, cols } = LEVELS[currentLevel];
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          if (board[r][c] === -1 && !flagged[r][c]) {
+            getCell(r,c).innerHTML = '<span class="flag-icon">🚩</span>';
+            getCell(r,c).classList.add('flagged');
+          }
+      minesCountEl.textContent = 0;
+      launchConfetti(); checkAchievements();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerEl.textContent = String(seconds).padStart(3, '0');
+        if (seconds >= 999) clearInterval(timerInterval);
+      }, 1000);
+    }
+
+    // Combo decay
+    setInterval(() => {
+      if (gameOver || firstClick) return;
+      if (Date.now() - lastClickTime > 2500 && combo > 1) {
+        combo = 1; comboEl.textContent = 'x1'; comboEl.className = 'stat-num';
+      }
+    }, 400);
+
+    startGame();
+  </script>
+</body>
+</html>
